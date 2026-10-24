@@ -1,5 +1,9 @@
 # Gather · Event Management System
 
+**Live evaluation demo:** https://gather-event-management.vercel.app/events
+
+Open the live demo, create a browser-only demo account, select an event, register, visit My events, refresh to show persistence, and cancel the registration. No Node.js installation is needed for the hosted demo. Live Ticketmaster data and event details, direct page refreshes, and login routing were verified on the hosted production build on 24 October 2026.
+
 A responsive event discovery and registration app for Web Programming Assignment 2. Built with React, Redux Toolkit, React Router and the Ticketmaster Discovery API.
 
 ## Run locally
