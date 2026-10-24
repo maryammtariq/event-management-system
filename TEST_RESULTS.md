@@ -23,11 +23,13 @@ The browser scenarios cover:
 
 Desktop and mobile screenshots were inspected during development. They are internal test outputs, not real event listings.
 
-## Remaining external checks
+## Live API verification (24 October 2026)
 
-A personal Ticketmaster Consumer Key was not available during development. Browser tests intercept API requests using explicit synthetic fixtures confined to the test suite. Live search and detail requests require a valid key before submission. The app itself has no mock-data fallback.
+A valid Consumer Key was configured privately in local `.env`; it is not committed. Ticketmaster returned HTTP 200 with real event results. Live search loaded 12 event cards, and real event details, simulated account registration, event registration, refresh persistence and cancellation passed.
 
-GitHub upload and instructor accessibility must be checked after the repository is created on the student's account.
+This environment's Chromium could not connect directly to Ticketmaster (ERR_EMPTY_RESPONSE). For live browser QA only, API calls were relayed through Node to the real Ticketmaster service; no fixture data was used for that check and the application source still calls Ticketmaster directly. A normal-browser direct API check on the user's computer remains advisable.
+
+The public GitHub repository is uploaded and its final application file tree was verified against the local source. The original 19 unit tests and 5 browser scenarios use synthetic fixtures for reproducible regression tests.
 
 ## Reproduce
 
