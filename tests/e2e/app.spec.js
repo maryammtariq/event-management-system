@@ -107,6 +107,15 @@ test("register, refresh, prevent duplicates, isolate users and cancel", async ({
   await expect(
     page.getByRole("heading", { name: "The Midnight Sessions" }),
   ).toBeVisible();
+  await page.screenshot({ path: "../qa/details-desktop.png", fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({ path: "../qa/details-mobile.png", fullPage: true });
+  await page.setViewportSize({ width: 1280, height: 720 });
   await page.getByRole("button", { name: "Register for event" }).click();
   await expect(page.getByText("Registration saved")).toBeVisible();
   await expect(
@@ -229,4 +238,50 @@ test("desktop and mobile layouts have no horizontal overflow", async ({
       await page.screenshot({ path: "../qa/mobile.png", fullPage: true });
   }
   expect(errors).toEqual([]);
+});
+
+test("date validation, filter URL persistence and pagination", async ({
+  page,
+}) => {
+  await page.goto("/events");
+  await page.getByLabel("From date", { exact: true }).fill("2099-11-20");
+  await page.getByLabel("To date", { exact: true }).fill("2099-11-01");
+  await page.getByRole("button", { name: "Apply filters" }).click();
+  expect(
+    await page
+      .getByLabel("To date", { exact: true })
+      .evaluate((e) => e.validationMessage),
+  ).toContain("on or after");
+  await page.getByLabel("To date", { exact: true }).fill("2099-11-30");
+  await page.getByRole("button", { name: "Apply filters" }).click();
+  await expect(page).toHaveURL(/endDate=2099-11-30/);
+  await page.reload();
+  await expect(page.getByLabel("From date", { exact: true })).toHaveValue(
+    "2099-11-20",
+  );
+  await page.route(
+    "https://app.ticketmaster.com/discovery/v2/events.json*",
+    (route) => {
+      const url = new URL(route.request().url());
+      return route.fulfill({
+        json: {
+          _embedded: { events: fixtures },
+          page: {
+            number: Number(url.searchParams.get("page") || 0),
+            totalElements: 24,
+            totalPages: 2,
+          },
+        },
+      });
+    },
+  );
+  await page.getByLabel("Sort events").selectOption("name,asc");
+  await expect(page.getByRole("button", { name: "Previous" })).toBeDisabled();
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await expect(page.getByText("Page 2 of 2", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Next", exact: true }),
+  ).toBeDisabled();
+  await page.getByRole("button", { name: "Previous" }).click();
+  await expect(page.getByText("Page 1 of 2", { exact: true })).toBeVisible();
 });

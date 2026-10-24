@@ -2070,3 +2070,70 @@ footer > span:last-child {
     transform: none;
   }
 }
+/* Keep decorative artwork clear of the reading column on narrow screens. */
+@media (max-width: 720px) {
+  .hero-copy {
+    width: 100%;
+    flex: none;
+    padding: 28px 20px;
+    padding-right: 105px;
+  }
+  .hero-art {
+    position: absolute;
+    inset: 0 0 0 auto;
+    min-width: 0;
+    width: 100px;
+    pointer-events: none;
+  }
+  .floating-ticket {
+    transform: rotate(12deg) scale(0.6);
+    margin-left: 0;
+  }
+  .floating-note {
+    display: none;
+  }
+  .hero-star {
+    right: 15%;
+    top: 22px;
+  }
+  .hero p {
+    max-width: 185px;
+  }
+  .event-date,
+  .venue-line,
+  .card-bottom {
+    font-size: 10px;
+  }
+}
+@media (max-width: 380px) {
+  .hero-copy {
+    padding-right: 80px;
+  }
+  .hero-art {
+    width: 82px;
+  }
+  .floating-ticket {
+    transform: rotate(12deg) scale(0.48);
+  }
+}
+@media (max-width: 720px) {
+  .floating-ticket {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%) rotate(12deg) scale(0.6);
+  }
+}
+@media (max-width: 380px) {
+  .floating-ticket {
+    transform: translate(-50%, -50%) rotate(12deg) scale(0.48);
+  }
+}
+@media (max-width: 720px) {
+  .auth-orbit {
+    display: none;
+  }
+  .sidebar nav > a {
+    white-space: nowrap;
+  }
+}
