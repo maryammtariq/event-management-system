@@ -15,11 +15,12 @@
 
 ## Before handing it in
 
-- [ ] Get your own Consumer Key from the Ticketmaster Developer Portal.
-- [ ] Add it only to local `.env`, restart Vite and verify real event results.
-- [ ] Try one real event registration and cancellation using a demo account.
-- [ ] Upload the repository with its complete Git history to your GitHub account.
-- [ ] Ensure the instructor can access the repository.
+- [x] Get your own Consumer Key from the Ticketmaster Developer Portal.
+- [x] Add it only to local `.env`, restart Vite and verify real event results.
+- [x] Try one real event registration and cancellation using a demo account.
+- [x] Upload the repository with its complete Git history to your GitHub account.
+- [x] Ensure the instructor can access the repository.
+- [ ] Verify direct API connectivity in your own browser (development QA used a relay for real API requests).
 - [ ] Review the code so you can explain the Redux state, routes and API calls.
 - [ ] Submit only the GitHub repository URL.
 
