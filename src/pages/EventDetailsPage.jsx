@@ -1,22 +1,234 @@
-import { useEffect } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { ArrowLeft, ArrowUpRight, CalendarDays, Check, Clock3, MapPin, ShieldCheck, Ticket } from 'lucide-react';
-import { fetchEvent } from '../features/eventsSlice';
-import { registerEvent, cancelRegistration, selectMyRegistrations } from '../features/registrationsSlice';
-import { notify } from '../features/uiSlice';
-import { canRegister, isCompleted, formatDate, formatTime, priceLabel } from '../utils/events';
-import { EventImage } from '../components/EventCard';
-import { ApiSetup, ErrorState, Loading } from '../components/Feedback';
-import { hasApiKey } from '../services/ticketmaster';
-export default function EventDetailsPage(){
- const {id}=useParams(), dispatch=useDispatch(), navigate=useNavigate();const {detail:event,detailStatus:status,detailError:error}=useSelector(s=>s.events),user=useSelector(s=>s.auth.user),registrations=useSelector(selectMyRegistrations);
- useEffect(()=>{if(!hasApiKey)return;const task=dispatch(fetchEvent(id));return()=>task.abort();},[dispatch,id]);
- if(!hasApiKey) return <ApiSetup/>;
- if(status==='failed')return <><Link className="back-link" to="/events"><ArrowLeft size={16}/> All events</Link><ErrorState message={error} onRetry={()=>dispatch(fetchEvent(id))}/></>;
- if(!event || event.id!==id || status==='loading' || status==='idle')return <Loading detail/>;
- const registered=registrations.some(r=>r.event.id===event.id),completed=isCompleted(event),available=canRegister(event);
- function register(){if(!user){navigate('/login',{state:{from:`/events/${encodeURIComponent(id)}`}});return;}dispatch(registerEvent({userId:user.id,event}));dispatch(notify('You’re registered! Find this event in My events.'));}
- function cancel(){if(window.confirm(`Cancel your registration for ${event.name}?`)){dispatch(cancelRegistration({userId:user.id,eventId:event.id}));dispatch(notify('Your registration has been cancelled.'));}}
- return <><Link className="back-link" to="/events"><ArrowLeft size={16}/> Back to discovery</Link><div className="detail-image-wrap"><EventImage event={event} className="detail-image"/><span className="detail-category">{event.category}{event.genre?` / ${event.genre}`:''}</span></div><div className="detail-layout"><section className="detail-main"><span className="eyebrow">{completed?'A MOMENT IN THE PAST':'YOUR NEXT GREAT MEMORY'}</span><h1>{event.name}</h1><div className="event-facts"><div><CalendarDays/><span><strong>{formatDate(event,{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</strong><small><Clock3 size={13}/>{formatTime(event)}</small></span></div><div><MapPin/><span><strong>{event.venue}</strong><small>{[event.city,event.country].filter(Boolean).join(', ') || 'Location to be announced'}</small>{event.address && <small>{event.address}</small>}</span></div></div><div className="detail-section"><h2>About this event</h2><p>{event.info || 'Make it a day to remember. Visit the official Ticketmaster event page for the latest programme, line-up and event information.'}</p>{event.note && <div className="info-note"><strong>Before you go</strong><p>{event.note}</p></div>}{event.age && <p>{event.age}</p>}</div>{event.accessible && <div className="detail-section"><h2>Accessibility</h2><p>{event.accessible}</p></div>}<div className="detail-section"><h2>Good to know</h2><p>Dates, venue and availability can change. Check the official listing before making travel plans. Displayed times are local to the venue.</p>{event.url && <a href={event.url} className="text-link" target="_blank" rel="noreferrer">View on Ticketmaster <ArrowUpRight size={16}/></a>}</div></section><aside className="registration-card"><span className="eyebrow">MAKE IT A PLAN</span><Ticket size={29}/><h2>{registered?'You’re on the list.':'Be part of the moment.'}</h2><p className="price-label">{priceLabel(event.price)}</p><span className={`event-status status-${event.status}`}>{completed?'Event has started / completed':event.status==='onsale'?'Event listed on Ticketmaster':event.status==='offsale'?'Ticket sales closed':event.status==='rescheduled'?'Event rescheduled':event.status}</span>{registered ? <><div className="registered-confirmation"><Check size={18}/> Registration saved</div>{!completed && <button className="button secondary full-width" onClick={cancel}>Cancel registration</button>}<Link to="/my-events" className="text-link">Go to My events <ArrowUpRight size={15}/></Link></> : <button className="button full-width" disabled={!available} onClick={register}>{!available ? completed?'Event completed':'Registration unavailable':user?'Register for event':'Log in to register'}{available && <ArrowUpRight size={17}/>}</button>}<p className="registration-note"><ShieldCheck size={16}/> This saves a local registration for this coursework app. It does not book, purchase or reserve a real ticket.</p>{event.url && <a className="official-link" href={event.url} target="_blank" rel="noreferrer">Official tickets & information <ArrowUpRight size={14}/></a>}</aside></div></>;
+import { useEffect } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  ArrowLeft,
+  ArrowUpRight,
+  CalendarDays,
+  Check,
+  Clock3,
+  MapPin,
+  ShieldCheck,
+  Ticket,
+} from "lucide-react";
+import { fetchEvent } from "../features/eventsSlice";
+import {
+  registerEvent,
+  cancelRegistration,
+  selectMyRegistrations,
+} from "../features/registrationsSlice";
+import { notify } from "../features/uiSlice";
+import {
+  canRegister,
+  isCompleted,
+  formatDate,
+  formatTime,
+  priceLabel,
+} from "../utils/events";
+import { EventImage } from "../components/EventCard";
+import { ApiSetup, ErrorState, Loading } from "../components/Feedback";
+import { hasApiKey } from "../services/ticketmaster";
+export default function EventDetailsPage() {
+  const { id } = useParams(),
+    dispatch = useDispatch(),
+    navigate = useNavigate();
+  const {
+      detail: event,
+      detailStatus: status,
+      detailError: error,
+    } = useSelector((s) => s.events),
+    user = useSelector((s) => s.auth.user),
+    registrations = useSelector(selectMyRegistrations);
+  useEffect(() => {
+    if (!hasApiKey) return;
+    const task = dispatch(fetchEvent(id));
+    return () => task.abort();
+  }, [dispatch, id]);
+  if (!hasApiKey) return <ApiSetup />;
+  if (status === "failed")
+    return (
+      <>
+        <Link className="back-link" to="/events">
+          <ArrowLeft size={16} /> All events
+        </Link>
+        <ErrorState message={error} onRetry={() => dispatch(fetchEvent(id))} />
+      </>
+    );
+  if (!event || event.id !== id || status === "loading" || status === "idle")
+    return <Loading detail />;
+  const registered = registrations.some((r) => r.event.id === event.id),
+    completed = isCompleted(event),
+    available = canRegister(event);
+  function register() {
+    if (!user) {
+      navigate("/login", {
+        state: { from: `/events/${encodeURIComponent(id)}` },
+      });
+      return;
+    }
+    dispatch(registerEvent({ userId: user.id, event }));
+    dispatch(notify("You’re registered! Find this event in My events."));
+  }
+  function cancel() {
+    if (window.confirm(`Cancel your registration for ${event.name}?`)) {
+      dispatch(cancelRegistration({ userId: user.id, eventId: event.id }));
+      dispatch(notify("Your registration has been cancelled."));
+    }
+  }
+  return (
+    <>
+      <Link className="back-link" to="/events">
+        <ArrowLeft size={16} /> Back to discovery
+      </Link>
+      <div className="detail-image-wrap">
+        <EventImage event={event} className="detail-image" />
+        <span className="detail-category">
+          {event.category}
+          {event.genre ? ` / ${event.genre}` : ""}
+        </span>
+      </div>
+      <div className="detail-layout">
+        <section className="detail-main">
+          <span className="eyebrow">
+            {completed ? "A MOMENT IN THE PAST" : "YOUR NEXT GREAT MEMORY"}
+          </span>
+          <h1>{event.name}</h1>
+          <div className="event-facts">
+            <div>
+              <CalendarDays />
+              <span>
+                <strong>
+                  {formatDate(event, {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </strong>
+                <small>
+                  <Clock3 size={13} />
+                  {formatTime(event)}
+                </small>
+              </span>
+            </div>
+            <div>
+              <MapPin />
+              <span>
+                <strong>{event.venue}</strong>
+                <small>
+                  {[event.city, event.country].filter(Boolean).join(", ") ||
+                    "Location to be announced"}
+                </small>
+                {event.address && <small>{event.address}</small>}
+              </span>
+            </div>
+          </div>
+          <div className="detail-section">
+            <h2>About this event</h2>
+            <p>
+              {event.info ||
+                "Make it a day to remember. Visit the official Ticketmaster event page for the latest programme, line-up and event information."}
+            </p>
+            {event.note && (
+              <div className="info-note">
+                <strong>Before you go</strong>
+                <p>{event.note}</p>
+              </div>
+            )}
+            {event.age && <p>{event.age}</p>}
+          </div>
+          {event.accessible && (
+            <div className="detail-section">
+              <h2>Accessibility</h2>
+              <p>{event.accessible}</p>
+            </div>
+          )}
+          <div className="detail-section">
+            <h2>Good to know</h2>
+            <p>
+              Dates, venue and availability can change. Check the official
+              listing before making travel plans. Displayed times are local to
+              the venue.
+            </p>
+            {event.url && (
+              <a
+                href={event.url}
+                className="text-link"
+                target="_blank"
+                rel="noreferrer"
+              >
+                View on Ticketmaster <ArrowUpRight size={16} />
+              </a>
+            )}
+          </div>
+        </section>
+        <aside className="registration-card">
+          <span className="eyebrow">MAKE IT A PLAN</span>
+          <Ticket size={29} />
+          <h2>
+            {registered ? "You’re on the list." : "Be part of the moment."}
+          </h2>
+          <p className="price-label">{priceLabel(event.price)}</p>
+          <span className={`event-status status-${event.status}`}>
+            {completed
+              ? "Event has started / completed"
+              : event.status === "onsale"
+                ? "Event listed on Ticketmaster"
+                : event.status === "offsale"
+                  ? "Ticket sales closed"
+                  : event.status === "rescheduled"
+                    ? "Event rescheduled"
+                    : event.status}
+          </span>
+          {registered ? (
+            <>
+              <div className="registered-confirmation">
+                <Check size={18} /> Registration saved
+              </div>
+              {!completed && (
+                <button
+                  className="button secondary full-width"
+                  onClick={cancel}
+                >
+                  Cancel registration
+                </button>
+              )}
+              <Link to="/my-events" className="text-link">
+                Go to My events <ArrowUpRight size={15} />
+              </Link>
+            </>
+          ) : (
+            <button
+              className="button full-width"
+              disabled={!available}
+              onClick={register}
+            >
+              {!available
+                ? completed
+                  ? "Event completed"
+                  : "Registration unavailable"
+                : user
+                  ? "Register for event"
+                  : "Log in to register"}
+              {available && <ArrowUpRight size={17} />}
+            </button>
+          )}
+          <p className="registration-note">
+            <ShieldCheck size={16} /> This saves a local registration for this
+            coursework app. It does not book, purchase or reserve a real ticket.
+          </p>
+          {event.url && (
+            <a
+              className="official-link"
+              href={event.url}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Official tickets & information <ArrowUpRight size={14} />
+            </a>
+          )}
+        </aside>
+      </div>
+    </>
+  );
 }

@@ -1,5 +1,71 @@
-import { Link } from 'react-router-dom';
-import { ArrowUpRight, CalendarDays, MapPin, Music2, Check } from 'lucide-react';
-import { formatDate, priceLabel } from '../utils/events';
-export function EventImage({event,className=''}) { return <div className={`event-image ${className}`}>{event.image ? <img src={event.image} alt="" loading="lazy" onError={e=>{e.currentTarget.style.display='none';}}/> : null}<Music2 className="image-fallback" aria-hidden="true"/></div>; }
-export default function EventCard({event,registered=false,children}) { return <article className="event-card"><Link to={`/events/${encodeURIComponent(event.id)}`} className="card-image-link" tabIndex={-1} aria-hidden="true"><EventImage event={event}/><span className="category-badge">{event.category}</span>{registered && <span className="registered-badge"><Check size={13}/> Registered</span>}</Link><div className="card-body"><p className="event-date"><CalendarDays size={14}/>{formatDate(event)}</p><h3><Link to={`/events/${encodeURIComponent(event.id)}`}>{event.name}</Link></h3><p className="venue-line"><MapPin size={14}/><span>{[event.venue,event.city].filter(Boolean).join(' · ')}</span></p><div className="card-bottom"><span>{priceLabel(event.price)}</span><Link to={`/events/${encodeURIComponent(event.id)}`} aria-label={`View ${event.name}`}><ArrowUpRight size={20}/></Link></div>{children}</div></article>; }
+import { Link } from "react-router-dom";
+import {
+  ArrowUpRight,
+  CalendarDays,
+  MapPin,
+  Music2,
+  Check,
+} from "lucide-react";
+import { formatDate, priceLabel } from "../utils/events";
+export function EventImage({ event, className = "" }) {
+  return (
+    <div className={`event-image ${className}`}>
+      {event.image ? (
+        <img
+          src={event.image}
+          alt=""
+          loading="lazy"
+          onError={(e) => {
+            e.currentTarget.style.display = "none";
+          }}
+        />
+      ) : null}
+      <Music2 className="image-fallback" aria-hidden="true" />
+    </div>
+  );
+}
+export default function EventCard({ event, registered = false, children }) {
+  return (
+    <article className="event-card">
+      <Link
+        to={`/events/${encodeURIComponent(event.id)}`}
+        className="card-image-link"
+        tabIndex={-1}
+        aria-hidden="true"
+      >
+        <EventImage event={event} />
+        <span className="category-badge">{event.category}</span>
+        {registered && (
+          <span className="registered-badge">
+            <Check size={13} /> Registered
+          </span>
+        )}
+      </Link>
+      <div className="card-body">
+        <p className="event-date">
+          <CalendarDays size={14} />
+          {formatDate(event)}
+        </p>
+        <h3>
+          <Link to={`/events/${encodeURIComponent(event.id)}`}>
+            {event.name}
+          </Link>
+        </h3>
+        <p className="venue-line">
+          <MapPin size={14} />
+          <span>{[event.venue, event.city].filter(Boolean).join(" · ")}</span>
+        </p>
+        <div className="card-bottom">
+          <span>{priceLabel(event.price)}</span>
+          <Link
+            to={`/events/${encodeURIComponent(event.id)}`}
+            aria-label={`View ${event.name}`}
+          >
+            <ArrowUpRight size={20} />
+          </Link>
+        </div>
+        {children}
+      </div>
+    </article>
+  );
+}

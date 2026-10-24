@@ -1,23 +1,363 @@
-import { useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { ArrowDown, ArrowRight, ArrowUpRight, ChevronLeft, ChevronRight, Drama, Globe2, MapPin, Music2, Search, SlidersHorizontal, Sparkles, Ticket, Trophy, X } from 'lucide-react';
-import { fetchEvents } from '../features/eventsSlice';
-import { selectMyRegistrations } from '../features/registrationsSlice';
-import { hasApiKey } from '../services/ticketmaster';
-import EventCard from '../components/EventCard';
-import { ApiSetup, EmptyState, ErrorState, Loading } from '../components/Feedback';
-const categories=[['','All events',CompassIcon],['Music','Music',Music2],['Sports','Sports',Trophy],['Arts & Theatre','Arts & theatre',Drama],['Family','Family',Sparkles],['Miscellaneous','More to explore',Globe2]];
-function CompassIcon(props){return <Ticket {...props}/>;}
-export default function EventsPage(){
- const [params,setParams]=useSearchParams();const dispatch=useDispatch(), resultsRef=useRef(null);
- const events=useSelector(s=>s.events), registrations=useSelector(selectMyRegistrations);
- const keyword=params.get('keyword') || '',city=params.get('city') || '',country=params.get('country') ?? 'US',category=params.get('category') || '',date=params.get('date') || '',endDate=params.get('endDate') || '',sort=params.get('sort') || 'date,asc',page=Math.max(0,Math.min(83,Number.parseInt(params.get('page'),10)||0));
- const filters={keyword,city,country,category,date,endDate,sort};
- useEffect(()=>{if(!hasApiKey)return;const task=dispatch(fetchEvents({filters:{keyword,city,country,category,date,endDate,sort},page}));return()=>task.abort();},[dispatch,keyword,city,country,category,date,endDate,sort,page]);
- function update(values){const next=new URLSearchParams(params);next.delete('page');Object.entries(values).forEach(([key,val])=>val?next.set(key,val):key==='country'?next.set(key,''):next.delete(key));setParams(next);}
- function search(e){e.preventDefault();update(Object.fromEntries(new FormData(e.currentTarget)));}
- function changePage(nextPage){const next=new URLSearchParams(params);next.set('page',String(nextPage));setParams(next);resultsRef.current?.scrollIntoView({behavior:'smooth',block:'start'});}
- const hasFilters=keyword || city || date || endDate || category || country!=='US' || sort!=='date,asc';
- return <><div className="page-intro"><span className="eyebrow"><span className="tiny-dot"/> THE BEST PLANS START WITH A LITTLE CURIOSITY</span><h1>Go on. <em>Be there.</em></h1><p>Live music, big games, little discoveries. Find your next good time.</p></div><section className="hero"><div className="hero-copy"><span className="hero-tag"><Sparkles size={14}/> LESS ORDINARY. MORE MEMORABLE.</span><h2>Your next<br/>“you had to be there.”</h2><p>Discover experiences that turn an ordinary day<br className="desktop-break"/> into a story worth telling.</p><a href="#discover" className="button lime-button">Find your moment <ArrowRight size={18}/></a></div><div className="hero-art" aria-hidden="true"><div className="orbit orbit-one"/><div className="orbit orbit-two"/><span className="hero-star">✳</span><div className="floating-ticket"><span>ADMIT ONE</span><Ticket size={53}/><strong>GOOD TIMES</strong><div className="ticket-dashes"/><small>MAKE A MEMORY ↗</small></div><div className="floating-note"><span className="note-dot"/> A little more life, live.</div></div><span className="hero-caption">REAL MOMENTS. RIGHT THIS WAY. <ArrowDown size={13}/></span></section><section id="discover" className="discover-section" ref={resultsRef}><div className="section-heading"><div><span className="eyebrow">OUT THERE, WAITING FOR YOU</span><h2>Discover events <ArrowUpRight size={25}/></h2></div><span className="live-label"><span className="tiny-dot"/> Powered by Ticketmaster</span></div><form className="search-panel" onSubmit={search} key={`${keyword}|${city}|${country}|${date}|${endDate}`}><div className="search-row"><label className="search-field"><Search size={19}/><span className="sr-only">Search events</span><input name="keyword" defaultValue={keyword} placeholder="Artist, event or a little inspiration…" maxLength={120}/></label><label className="search-field city-field"><MapPin size={18}/><span className="sr-only">City</span><input name="city" defaultValue={city} placeholder="Any city" maxLength={80}/></label><button className="button search-button">Search <ArrowRight size={17}/></button></div><div className="filter-row"><span className="filter-label"><SlidersHorizontal size={15}/> Refine your plans</span><label><span>Country</span><select name="country" defaultValue={country}><option value="">Worldwide</option><option value="US">United States</option><option value="GB">United Kingdom</option><option value="CA">Canada</option><option value="AU">Australia</option><option value="DE">Germany</option><option value="FR">France</option><option value="NL">Netherlands</option><option value="IE">Ireland</option><option value="NZ">New Zealand</option><option value="MX">Mexico</option></select></label><label><span>From</span><input type="date" name="date" defaultValue={date} aria-label="From date"/></label><label><span>To</span><input type="date" name="endDate" defaultValue={endDate} min={date || undefined} aria-label="To date"/></label><button className="text-button apply-button" type="submit">Apply filters <ArrowRight size={13}/></button>{hasFilters && <button type="button" className="reset-button" onClick={()=>setParams({})}><X size={13}/> Reset</button>}</div></form><div className="category-tabs" aria-label="Event categories">{categories.map(([value,label,Icon])=><button key={value} className={category===value?'active':''} aria-pressed={category===value} onClick={()=>update({category:value})}><Icon size={16}/>{label}</button>)}</div><div className="results-heading"><span>{events.status==='succeeded' && hasApiKey ? <><strong>{events.total.toLocaleString()}</strong> experiences to discover</> : 'Something for every kind of you'}</span><label>Sort by <select value={sort} aria-label="Sort events" onChange={e=>update({sort:e.target.value})}><option value="date,asc">Soonest first</option><option value="relevance,desc">Most relevant</option><option value="name,asc">Name A–Z</option></select></label></div>{!hasApiKey ? <ApiSetup/> : events.status==='loading' || events.status==='idle' ? <Loading/> : events.status==='failed' ? <ErrorState message={events.error} onRetry={()=>dispatch(fetchEvents({filters,page}))}/> : events.items.length ? <><div className="event-grid">{events.items.map(event=><EventCard key={event.id} event={event} registered={registrations.some(r=>r.event.id===event.id)}/>)}</div>{events.totalPages>1 && <nav className="pagination" aria-label="Event pages"><button className="button secondary" disabled={page===0} onClick={()=>changePage(page-1)}><ChevronLeft size={16}/> Previous</button><span>Page {page+1} of {events.totalPages}{events.total>1000?' · first 1,000 results':''}</span><button className="button secondary" disabled={page+1>=events.totalPages} onClick={()=>changePage(page+1)}>Next <ChevronRight size={16}/></button></nav>}</> : <EmptyState action={<button className="button secondary" onClick={()=>setParams({})}>Clear filters</button>}/>}</section><div className="bottom-callout"><Sparkles/><div><h3>Good times look good on your calendar.</h3><p>Find your people. Find your place. Make a memory.</p></div><a href="#discover" className="round-link" aria-label="Explore events"><ArrowUpRight/></a></div></>;
+import { useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  ArrowDown,
+  ArrowRight,
+  ArrowUpRight,
+  ChevronLeft,
+  ChevronRight,
+  Drama,
+  Globe2,
+  MapPin,
+  Music2,
+  Search,
+  SlidersHorizontal,
+  Sparkles,
+  Ticket,
+  Trophy,
+  X,
+} from "lucide-react";
+import { fetchEvents } from "../features/eventsSlice";
+import { selectMyRegistrations } from "../features/registrationsSlice";
+import { hasApiKey } from "../services/ticketmaster";
+import EventCard from "../components/EventCard";
+import {
+  ApiSetup,
+  EmptyState,
+  ErrorState,
+  Loading,
+} from "../components/Feedback";
+const categories = [
+  ["", "All events", CompassIcon],
+  ["Music", "Music", Music2],
+  ["Sports", "Sports", Trophy],
+  ["Arts & Theatre", "Arts & theatre", Drama],
+  ["Family", "Family", Sparkles],
+  ["Miscellaneous", "More to explore", Globe2],
+];
+function CompassIcon(props) {
+  return <Ticket {...props} />;
+}
+export default function EventsPage() {
+  const [params, setParams] = useSearchParams();
+  const dispatch = useDispatch(),
+    resultsRef = useRef(null);
+  const events = useSelector((s) => s.events),
+    registrations = useSelector(selectMyRegistrations);
+  const keyword = params.get("keyword") || "",
+    city = params.get("city") || "",
+    country = params.get("country") ?? "US",
+    category = params.get("category") || "",
+    date = params.get("date") || "",
+    endDate = params.get("endDate") || "",
+    sort = params.get("sort") || "date,asc",
+    page = Math.max(
+      0,
+      Math.min(83, Number.parseInt(params.get("page"), 10) || 0),
+    );
+  const filters = { keyword, city, country, category, date, endDate, sort };
+  useEffect(() => {
+    if (!hasApiKey) return;
+    const task = dispatch(
+      fetchEvents({
+        filters: { keyword, city, country, category, date, endDate, sort },
+        page,
+      }),
+    );
+    return () => task.abort();
+  }, [dispatch, keyword, city, country, category, date, endDate, sort, page]);
+  function update(values) {
+    const next = new URLSearchParams(params);
+    next.delete("page");
+    Object.entries(values).forEach(([key, val]) =>
+      val
+        ? next.set(key, val)
+        : key === "country"
+          ? next.set(key, "")
+          : next.delete(key),
+    );
+    setParams(next);
+  }
+  function search(e) {
+    e.preventDefault();
+    const values = Object.fromEntries(new FormData(e.currentTarget));
+    const endInput = e.currentTarget.elements.endDate;
+    endInput.setCustomValidity("");
+    if (values.date && values.endDate && values.endDate < values.date) {
+      endInput.setCustomValidity(
+        "Choose an end date on or after the start date.",
+      );
+      endInput.reportValidity();
+      return;
+    }
+    update(values);
+  }
+  function changePage(nextPage) {
+    const next = new URLSearchParams(params);
+    next.set("page", String(nextPage));
+    setParams(next);
+    resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  const hasFilters =
+    keyword ||
+    city ||
+    date ||
+    endDate ||
+    category ||
+    country !== "US" ||
+    sort !== "date,asc";
+  return (
+    <>
+      <div className="page-intro">
+        <span className="eyebrow">
+          <span className="tiny-dot" /> THE BEST PLANS START WITH A LITTLE
+          CURIOSITY
+        </span>
+        <h1>
+          Go on. <em>Be there.</em>
+        </h1>
+        <p>
+          Live music, big games, little discoveries. Find your next good time.
+        </p>
+      </div>
+      <section className="hero">
+        <div className="hero-copy">
+          <span className="hero-tag">
+            <Sparkles size={14} /> LESS ORDINARY. MORE MEMORABLE.
+          </span>
+          <h2>
+            Your next
+            <br />
+            “you had to be there.”
+          </h2>
+          <p>
+            Discover experiences that turn an ordinary day
+            <br className="desktop-break" /> into a story worth telling.
+          </p>
+          <a href="#discover" className="button lime-button">
+            Find your moment <ArrowRight size={18} />
+          </a>
+        </div>
+        <div className="hero-art" aria-hidden="true">
+          <div className="orbit orbit-one" />
+          <div className="orbit orbit-two" />
+          <span className="hero-star">✳</span>
+          <div className="floating-ticket">
+            <span>ADMIT ONE</span>
+            <Ticket size={53} />
+            <strong>GOOD TIMES</strong>
+            <div className="ticket-dashes" />
+            <small>MAKE A MEMORY ↗</small>
+          </div>
+          <div className="floating-note">
+            <span className="note-dot" /> A little more life, live.
+          </div>
+        </div>
+        <span className="hero-caption">
+          REAL MOMENTS. RIGHT THIS WAY. <ArrowDown size={13} />
+        </span>
+      </section>
+      <section id="discover" className="discover-section" ref={resultsRef}>
+        <div className="section-heading">
+          <div>
+            <span className="eyebrow">OUT THERE, WAITING FOR YOU</span>
+            <h2>
+              Discover events <ArrowUpRight size={25} />
+            </h2>
+          </div>
+          <span className="live-label">
+            <span className="tiny-dot" /> Powered by Ticketmaster
+          </span>
+        </div>
+        <form
+          className="search-panel"
+          onSubmit={search}
+          key={`${keyword}|${city}|${country}|${date}|${endDate}`}
+        >
+          <div className="search-row">
+            <label className="search-field">
+              <Search size={19} />
+              <span className="sr-only">Search events</span>
+              <input
+                name="keyword"
+                defaultValue={keyword}
+                placeholder="Artist, event or a little inspiration…"
+                maxLength={120}
+              />
+            </label>
+            <label className="search-field city-field">
+              <MapPin size={18} />
+              <span className="sr-only">City</span>
+              <input
+                name="city"
+                defaultValue={city}
+                placeholder="Any city"
+                maxLength={80}
+              />
+            </label>
+            <button className="button search-button">
+              Search <ArrowRight size={17} />
+            </button>
+          </div>
+          <div className="filter-row">
+            <span className="filter-label">
+              <SlidersHorizontal size={15} /> Refine your plans
+            </span>
+            <label>
+              <span>Country</span>
+              <select name="country" defaultValue={country}>
+                <option value="">Worldwide</option>
+                <option value="US">United States</option>
+                <option value="GB">United Kingdom</option>
+                <option value="CA">Canada</option>
+                <option value="AU">Australia</option>
+                <option value="DE">Germany</option>
+                <option value="FR">France</option>
+                <option value="NL">Netherlands</option>
+                <option value="IE">Ireland</option>
+                <option value="NZ">New Zealand</option>
+                <option value="MX">Mexico</option>
+              </select>
+            </label>
+            <label>
+              <span>From</span>
+              <input
+                type="date"
+                name="date"
+                defaultValue={date}
+                aria-label="From date"
+              />
+            </label>
+            <label>
+              <span>To</span>
+              <input
+                type="date"
+                onChange={(e) => e.currentTarget.setCustomValidity("")}
+                name="endDate"
+                defaultValue={endDate}
+                aria-label="To date"
+              />
+            </label>
+            <button className="text-button apply-button" type="submit">
+              Apply filters <ArrowRight size={13} />
+            </button>
+            {hasFilters && (
+              <button
+                type="button"
+                className="reset-button"
+                onClick={() => setParams({})}
+              >
+                <X size={13} /> Reset
+              </button>
+            )}
+          </div>
+        </form>
+        <div className="category-tabs" aria-label="Event categories">
+          {categories.map(([value, label, Icon]) => (
+            <button
+              key={value}
+              className={category === value ? "active" : ""}
+              aria-pressed={category === value}
+              onClick={() => update({ category: value })}
+            >
+              <Icon size={16} />
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="results-heading">
+          <span>
+            {events.status === "succeeded" && hasApiKey ? (
+              <>
+                <strong>{events.total.toLocaleString()}</strong> experiences to
+                discover
+              </>
+            ) : (
+              "Something for every kind of you"
+            )}
+          </span>
+          <label>
+            Sort by{" "}
+            <select
+              value={sort}
+              aria-label="Sort events"
+              onChange={(e) => update({ sort: e.target.value })}
+            >
+              <option value="date,asc">Soonest first</option>
+              <option value="relevance,desc">Most relevant</option>
+              <option value="name,asc">Name A–Z</option>
+            </select>
+          </label>
+        </div>
+        {!hasApiKey ? (
+          <ApiSetup />
+        ) : events.status === "loading" || events.status === "idle" ? (
+          <Loading />
+        ) : events.status === "failed" ? (
+          <ErrorState
+            message={events.error}
+            onRetry={() => dispatch(fetchEvents({ filters, page }))}
+          />
+        ) : events.items.length ? (
+          <>
+            <div className="event-grid">
+              {events.items.map((event) => (
+                <EventCard
+                  key={event.id}
+                  event={event}
+                  registered={registrations.some(
+                    (r) => r.event.id === event.id,
+                  )}
+                />
+              ))}
+            </div>
+            {events.totalPages > 1 && (
+              <nav className="pagination" aria-label="Event pages">
+                <button
+                  className="button secondary"
+                  disabled={page === 0}
+                  onClick={() => changePage(page - 1)}
+                >
+                  <ChevronLeft size={16} /> Previous
+                </button>
+                <span>
+                  Page {page + 1} of {events.totalPages}
+                  {events.total > 1000 ? " · first 1,000 results" : ""}
+                </span>
+                <button
+                  className="button secondary"
+                  disabled={page + 1 >= events.totalPages}
+                  onClick={() => changePage(page + 1)}
+                >
+                  Next <ChevronRight size={16} />
+                </button>
+              </nav>
+            )}
+          </>
+        ) : (
+          <EmptyState
+            action={
+              <button
+                className="button secondary"
+                onClick={() => setParams({})}
+              >
+                Clear filters
+              </button>
+            }
+          />
+        )}
+      </section>
+      <div className="bottom-callout">
+        <Sparkles />
+        <div>
+          <h3>Good times look good on your calendar.</h3>
+          <p>Find your people. Find your place. Make a memory.</p>
+        </div>
+        <a href="#discover" className="round-link" aria-label="Explore events">
+          <ArrowUpRight />
+        </a>
+      </div>
+    </>
+  );
 }
