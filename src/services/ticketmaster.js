@@ -1,19 +1,19 @@
 import { normalizeEvent } from "../utils/events";
 const ROOT = "https://app.ticketmaster.com/discovery/v2";
-export const hasApiKey = Boolean(
-  import.meta.env.VITE_TICKETMASTER_API_KEY?.trim(),
-);
+const useProxy = import.meta.env.VITE_TICKETMASTER_PROXY === "true";
+export const hasApiKey =
+  useProxy || Boolean(import.meta.env.VITE_TICKETMASTER_API_KEY?.trim());
 export function buildSearchParams(
   filters = {},
   page = 0,
   key = import.meta.env.VITE_TICKETMASTER_API_KEY,
 ) {
-  if (!key?.trim())
+  if (!useProxy && !key?.trim())
     throw new Error(
       "Add your Ticketmaster API key to .env and restart the app.",
     );
   const params = new URLSearchParams({
-    apikey: key.trim(),
+    ...(useProxy ? {} : { apikey: key.trim() }),
     size: "12",
     page: String(page),
     sort: filters.sort || "date,asc",
@@ -37,7 +37,15 @@ async function request(path, params, signal) {
   let response;
   try {
     const timeout = AbortSignal.timeout(15000);
-    response = await fetch(`${ROOT}/${path}?${params}`, {
+    const query = new URLSearchParams(params);
+    if (useProxy) {
+      query.delete("apikey");
+      query.set("endpoint", path);
+    }
+    const url = useProxy
+      ? `/api/ticketmaster?${query}`
+      : `${ROOT}/${path}?${query}`;
+    response = await fetch(url, {
       signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
     });
   } catch (error) {
@@ -84,14 +92,14 @@ export async function searchEvents(filters, page, signal) {
 }
 export async function getEvent(id, signal) {
   const key = import.meta.env.VITE_TICKETMASTER_API_KEY;
-  if (!key?.trim())
+  if (!useProxy && !key?.trim())
     throw new Error(
       "Add your Ticketmaster API key to .env and restart the app.",
     );
   return normalizeEvent(
     await request(
       `events/${encodeURIComponent(id)}.json`,
-      new URLSearchParams({ apikey: key.trim() }),
+      new URLSearchParams(useProxy ? {} : { apikey: key.trim() }),
       signal,
     ),
   );

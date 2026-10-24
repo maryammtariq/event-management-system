@@ -172,3 +172,9 @@ No API key, account password, `node_modules/` or `dist/` should be uploaded. Git
 - [Vite environment variables](https://vite.dev/guide/env-and-mode)
 
 The UI and application structure are custom to this project. Google Fonts serves DM Sans and Manrope with local sans-serif fallbacks. Interface icons use Lucide; event imagery comes from Ticketmaster API results.
+
+## Hosted evaluation demo
+
+The hosted Vercel build uses `VITE_TICKETMASTER_PROXY=true` and stores the key under server-only `TICKETMASTER_API_KEY`. The narrow `/api/ticketmaster` GET endpoint forwards event search and detail requests, limits page size and permitted parameters, and caches successful results briefly. No authentication data is sent to this endpoint. Account authentication and registrations remain the assignment's browser-only simulation.
+
+`vercel.json` routes client-side React Router URLs back to `index.html`, while preserving API endpoints. For local Vite development, the original `.env` Consumer Key setup continues to work. To run server endpoints locally, use Vercel's development server with the server environment variables configured.
